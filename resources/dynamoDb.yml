@@ -1,0 +1,18 @@
+Resources:
+  MeasurmentsDynamoDB:
+    Type: 'AWS::DynamoDB::Table'
+    Properties:
+      TableName: ${self:custom.tableName}
+      AttributeDefinitions:
+      - AttributeName: provider
+        AttributeType: S
+      - AttributeName: measurementTime
+        AttributeType: S
+      KeySchema:
+      - AttributeName: provider
+        KeyType: HASH
+      - AttributeName: measurementTime
+        KeyType: RANGE
+      ProvisionedThroughput:
+        ReadCapacityUnits: 1
+        WriteCapacityUnits: 1

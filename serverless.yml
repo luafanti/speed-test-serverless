@@ -1,0 +1,49 @@
+service: serverless-flask
+
+plugins:
+  - serverless-python-requirements
+  - serverless-wsgi
+
+custom:
+  tableName: measurments-${self:provider.stage}
+  wsgi:
+    app: app.app
+    packRequirements: false
+  pythonRequirements:
+    dockerizePip: non-linux
+
+provider:
+  name: aws
+  runtime: python3.6
+  stage: ${opt:stage, 'dev'}
+  region: eu-west-2
+  environment:
+    TABLE_NAME: ${self:custom.tableName}
+  iamRoleStatements:
+    - Effect: "Allow"
+      Action:
+        - dynamodb:DescribeTable
+        - dynamodb:Query
+        - dynamodb:Scan
+        - dynamodb:GetItem
+        - dynamodb:PutItem
+        - dynamodb:UpdateItem
+        - dynamodb:DeleteItem
+      Resource:
+        Fn::GetAtt:
+          - MeasurmentsDynamoDB
+          - Arn
+
+functions:
+  app:
+    handler: wsgi.handler
+    events:
+      - httpApi:
+          method: "*"
+          path: /measurement
+      - httpApi:
+          method: "*"
+          path: /
+
+resources:
+  - ${file(resources/dynamoDb.yml)}
