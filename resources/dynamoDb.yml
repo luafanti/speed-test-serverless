@@ -4,12 +4,12 @@ Resources:
     Properties:
       TableName: ${self:custom.tableName}
       AttributeDefinitions:
-      - AttributeName: provider
+      - AttributeName: measurementId
         AttributeType: S
       - AttributeName: measurementTime
         AttributeType: S
       KeySchema:
-      - AttributeName: provider
+      - AttributeName: measurementId
         KeyType: HASH
       - AttributeName: measurementTime
         KeyType: RANGE

@@ -28,6 +28,14 @@ cd speed-test-serverless
 npm install
 ```
 
+Then you need to create python venv and install required packages
+
+```
+virtualenv venv
+source venv/bin/activate
+pip install -r requirements.txt
+```
+
 To deploy application to AWS, execute below command 
 
 ```
@@ -50,13 +58,10 @@ endpoints:
 ```
 
 ### Local development
-Local development required prior deployed stack on AWS to use DynamoDB from cloud. To develop locally, create a virtual environment and install your dependencies:
+Local development required prior deployed stack on AWS to use DynamoDB from the cloud. To develop locally, you can use this same venv but you need to install boto3. I didn't put a boto3 into requirements.txt because it is embedded in Lambda runtime
 
 ```
-virtualenv venv
-source venv/bin/activate
-pip install -r requirements.txt
-pip install boto3 <--- this dependency is embedded in Lambda so I'm not put it into requirments.txt. Pls install it manually
+pip install boto3
 ```
 
 Then, run app:

@@ -10,8 +10,9 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Counter-Up/1.0.0/jquery.counterup.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/waypoints/4.0.1/jquery.waypoints.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.3/dist/js/bootstrap.bundle.min.js"
-        integrity="sha384-ho+j7jyWK8fNQe+A12Hb8AhRq26LrZ/JpcUGGOn+Y7RsweNrtN/tE3MoK7ZeZDyx"
-        crossorigin="anonymous"></script>
+        integrity="sha384-ho+j7jyWK8fNQe+A12Hb8AhRq26LrZ/JpcUGGOn+Y7RsweNrtN/tE3MoK7ZeZDyx" crossorigin="anonymous">
+        </script>
+
     <style>
         body {
             background-color: grey;
@@ -53,20 +54,16 @@
     <div class="container" id="main" style="background-color: white; width: 90%; height: 70%;">
         <div class="row row-cols-3 data-box">
             <div class="col data">
-                <span class="measurment-record">{{upload}}</span>
-                <p>Upload (Kbps)</p>
+                <span id="bps-span" class="measurment-record"></span>
+                <p>Download (Bps)</p>
             </div>
             <div class="col data">
-                <span class="measurment-record">{{download}}</span>
+                <span id="kbps-span" class="measurment-record"></span>
                 <p>Download (Kbps)</p>
             </div>
             <div class="col data">
-                <span class="measurment-record">{{ping}}</span>
-                <p>Ping</p>
-            </div>
-            <div class="col data">
-                <span style="color: blue;">{{provider}}</span>
-                <p>Provider</p>
+                <span id="mbps-span" class="measurment-record"></span>
+                <p>Download (Mbps)</p>
             </div>
         </div>
 
@@ -77,9 +74,7 @@
         </center>
 
         <div class="main-button">
-            <form id="generate-measurment" action="/" method="POST">
-                <button class="btn btn-primary" type="submit">Start</button>
-            </form>
+            <button id="execute-test" onclick="executeSpeedTest()" class="btn btn-primary">Test</button>
         </div>
 
         <div class="main-button">
@@ -88,40 +83,71 @@
             </form>
         </div>
 
-        {% if ping %}
         <div class="main-button">
             <form id="save-measurment" action="/measurement" method="POST">
-                <input type="hidden" name="provider" value={{provider}}>
-                <input type="hidden" name="upload" value={{upload}}>
-                <input type="hidden" name="download" value={{download}}>
-                <input type="hidden" name="ping" value={{ping}}>
                 <button id="save-measurment-button" class="btn btn-success" type="submit">Save</button>
             </form>
         </div>
-        {% endif %}
     </div>
-    <script type="text/javascript">
-        $(".measurment-record").counterUp({ delay: 20, time: 2000 });
-        document.querySelector(".btn-primary").addEventListener("click", function () {
-            document.querySelector(".spinner-border").style.display = "block";
-            setTimeout(function () {
-                document.querySelector(".btn-primary").innerHTML = "Loading";
-                document.querySelector(".btn-primary").disabled = true;
-                document.querySelector("#save-measurment-button").disabled = true;
-            }, 1000);
-        }); 
-    </script>
 
+    <script type="text/javascript">
+        document.querySelector("#save-measurment-button").disabled = true;
+
+        function executeSpeedTest() {
+            document.querySelector("#save-measurment-button").disabled = true;
+            document.querySelector("#execute-test").disabled = true;
+            document.querySelector(".spinner-border").style.display = "block";
+
+            var imageAddr = "";
+            var downloadSize = 8507890; //image size
+            console.log("Starting speed test ...");
+
+            var startTime, endTime;
+            var download = new Image();
+
+            startTime = (new Date()).getTime();
+            var cacheBuster = "?reqTime=" + startTime;
+            download.src = imageAddr + cacheBuster;
+
+            download.onload = function () {
+                endTime = (new Date()).getTime();
+                var duration = (endTime - startTime) / 1000;
+                var bitsLoaded = downloadSize * 8;
+                var speedBps = (bitsLoaded / duration).toFixed(2);
+                var speedKbps = (speedBps / 1024).toFixed(2);
+                var speedMbps = (speedKbps / 1024).toFixed(2);
+                console.log(`Your connection speed is: ${speedBps} bps, ${speedKbps} kbps, ${speedMbps} Mbps`);
+
+                $(".measurment-record").counterUp({ delay: 20, time: 2000 });
+                $("#bps-span").text(speedBps);
+                $("#kbps-span").text(speedKbps);
+                $("#mbps-span").text(speedMbps);
+                document.querySelector("#execute-test").disabled = false;
+                document.querySelector(".spinner-border").style.display = "none";
+
+                setTimeout(function () {
+                    document.querySelector("#save-measurment-button").disabled = false;
+                }, 3000);
+
+            }
+
+            download.onerror = function (err, msg) {
+                console.log(`Can't load image. Error ${msg}`);
+            }
+
+        };
+    </script>
     <script type="text/javascript">
         var measurmentForm = $('#save-measurment');
         measurmentForm.submit(function (e) {
             e.preventDefault();
+            var formData = {
+                "speedBps": $("#bps-span").text(),
+                "speedKbps": $("#kbps-span").text(),
+                "speedMbps": $("#mbps-span").text()
+            };
 
-            var formData = {};
-            $("#save-measurment").serializeArray().map(function (x) {
-                formData[x.name] = x.value;
-            });
-            console.log(`Form data = ${JSON.stringify(formData)}`)
+            console.log(`Form data ${JSON.stringify(formData)}`);
 
             $.ajax({
                 type: "POST",

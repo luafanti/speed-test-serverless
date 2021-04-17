@@ -1,6 +1,6 @@
 from flask import Flask, render_template, request
 from datetime import datetime, timezone
-import speedtest
+import uuid
 import os
 import boto3
 import json
@@ -14,41 +14,26 @@ app.config['DEBUG'] = True
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
-    if request.method == 'POST':
-        speed_test = speedtest.Speedtest()
-        speed_test.get_servers()
-        speed_test.get_best_server()
-        speed_test.download()
-        speed_test.upload()
-        speed_test_result = speed_test.results.dict()
-
-        download = round(speed_test_result["download"]/1000, 2)
-        upload = round(speed_test_result["upload"]/1000, 2)
-        ping = round(speed_test_result["ping"])
-        provider = speed_test_result["client"]["isp"]
-
-        return render_template('index.html', download=download, upload=upload, ping=ping, provider=provider)
-    else:
-        return render_template('index.html', download=0, upload=0, ping=0, provider="...")
-
+    return render_template('index.html')
 
 @app.route('/measurement', methods=['POST'])
 def save_measurement():
 
     json_req = request.get_json()
-    print(f"Recived measurment to save {json_req}")
+    print(f"Recived measurement record to save {json_req}")
 
     if is_payload_valid(json_req) is False:
-        return json.dumps({'success': False, 'msg': 'Measurment payload is incorrect'}), 400, {'ContentType': 'application/json'}
+        print(f"Measurement payload is incorrect {json_req}")
+        return json.dumps({'success': False, 'msg': 'Measurement payload is incorrect'}), 400, {'ContentType': 'application/json'}
 
     dynamo_resp = client.put_item(
         TableName=TABLE_NAME,
         Item={
-            'provider': {'S': json_req['provider']},
+            'measurementId': {'S': str(uuid.uuid4())},
             'measurementTime': {'S': datetime.now(timezone.utc).isoformat(' ', 'seconds')},
-            'ping': {'S': json_req['ping']},
-            'download': {'S': json_req['download']},
-            'upload': {'S': json_req['download']}
+            'speedBps': {'N': json_req['speedBps']},
+            'speedKbps': {'N': json_req['speedKbps']},
+            'speedMbps': {'N': json_req['speedMbps']}
         }
     )
     print(f"Response from DynamoDB = {dynamo_resp}")
@@ -62,16 +47,13 @@ def get_measurement():
         TableName=TABLE_NAME
     )
 
-    
-
     measurements = []
     for item in dynamo_resp['Items']:
         measurements.append({
             'measurement_time': item['measurementTime']['S'],
-            'provider': item['provider']['S'],
-            'ping': item['ping']['S'],
-            'download': item['download']['S'],
-            'upload': item['upload']['S']
+            'speed_bps': item['speedBps']['N'],
+            'speed_kbps': item['speedKbps']['N'],
+            'speed_mbps': item['speedMbps']['N']
         })
 
     for m in measurements:
@@ -83,10 +65,9 @@ def get_measurement():
 
 def is_payload_valid(payload):
     if any([
-        payload.get('provider') is None,
-        payload.get('ping') is None,
-        payload.get('download') is None,
-        payload.get('upload') is None
+        payload.get('speedBps') is None,
+        payload.get('speedKbps') is None,
+        payload.get('speedMbps') is None
     ]):
         return False
     else:
