@@ -98,8 +98,9 @@
             document.querySelector("#execute-test").disabled = true;
             document.querySelector(".spinner-border").style.display = "block";
 
-            var imageAddr = "";
-            var downloadSize = 8507890; //image size
+            var imageAddr = "<IMAGE URL GOES HERE>";
+            //image size
+            var downloadSize = 8507890;
             console.log("Starting speed test ...");
 
             var startTime, endTime;
@@ -107,7 +108,7 @@
 
             startTime = (new Date()).getTime();
             var cacheBuster = "?reqTime=" + startTime;
-            download.src = imageAddr + cacheBuster;
+            download.src = imageAddr + cacheBuster
 
             download.onload = function () {
                 endTime = (new Date()).getTime();
